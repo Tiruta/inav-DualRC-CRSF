@@ -183,6 +183,7 @@ bool isRxPulseValid(uint16_t pulseDuration)
 bool serialRxInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
 {
     bool enabled = false;
+    bool enabled2 = false;
     switch (rxConfig->serialrx_provider) {
 #ifdef USE_SERIALRX_SRXL2
     case SERIALRX_SRXL2:
@@ -220,7 +221,11 @@ bool serialRxInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig
 #endif
 #ifdef USE_SERIALRX_CRSF
     case SERIALRX_CRSF:
+        enabled2 = crsfRxInit2(rxConfig, rxRuntimeConfig);
         enabled = crsfRxInit(rxConfig, rxRuntimeConfig);
+        if (enabled2 == true && enabled ==true){
+            enabled = true;
+        }
         break;
 #endif
 #ifdef USE_SERIALRX_FPORT
