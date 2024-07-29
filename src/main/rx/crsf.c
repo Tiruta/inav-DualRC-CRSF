@@ -274,14 +274,15 @@ STATIC_UNIT_TESTED uint8_t crsfFrameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
 
             // unpack the RC channels
             const crsfPayloadRcChannelsPacked_t* rcChannels = (crsfPayloadRcChannelsPacked_t*)&crsfFrame.frame.payload;
-            crsfChannelData[0] = rcChannels->chan0;
-            crsfChannelData[1] = rcChannels->chan1;
-            crsfChannelData[2] = rcChannels->chan2;
-            crsfChannelData[3] = rcChannels->chan3;
-            crsfChannelData[4] = rcChannels->chan4;
-            crsfChannelData[5] = rcChannels->chan5;
-            crsfChannelData[6] = rcChannels->chan6;
-            crsfChannelData[7] = rcChannels->chan7;
+            crsfChannelData[0] = rcChannels->chan4;
+            crsfChannelData[1] = rcChannels->chan5;
+            crsfChannelData[2] = rcChannels->chan6;
+            crsfChannelData[3] = rcChannels->chan7;
+            crsfChannelData[4] = rcChannels->chan0;
+            crsfChannelData[5] = rcChannels->chan1;
+            crsfChannelData[6] = rcChannels->chan2;
+            crsfChannelData[7] = rcChannels->chan3;
+
 
             
             return RX_FRAME_COMPLETE;
@@ -378,8 +379,8 @@ bool crsfRxInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
         return false;
     }
 
-    serialPort = openSerialPort(portConfig->identifier,
-        1,
+    serialPort = openSerialPort(1,
+        FUNCTION_RX_SERIAL,
         crsfDataReceive,
         NULL,
         CRSF_BAUDRATE,
@@ -405,8 +406,8 @@ bool crsfRxInit2(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
         return false;
     }
 
-    serialPort = openSerialPort(portConfig->identifier,
-        6,
+    serialPort = openSerialPort(6,
+        FUNCTION_RX_SERIAL,
         crsfDataReceive,
         NULL,
         CRSF_BAUDRATE,
