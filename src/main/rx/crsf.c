@@ -113,6 +113,28 @@ struct crsfPayloadRcChannelsPacked_s {
 
 typedef struct crsfPayloadRcChannelsPacked_s crsfPayloadRcChannelsPacked_t;
 
+struct crsfPayloadRcChannelsPacked2_s {
+    // 176 bits of data (11 bits per channel * 16 channels) = 22 bytes.
+    unsigned int chan0 : 11;
+    unsigned int chan1 : 11;
+    unsigned int chan2 : 11;
+    unsigned int chan3 : 11;
+    unsigned int chan4 : 11;
+    unsigned int chan5 : 11;
+    unsigned int chan6 : 11;
+    unsigned int chan7 : 11;
+    unsigned int chan8 : 11;
+    unsigned int chan9 : 11;
+    unsigned int chan10 : 11;
+    unsigned int chan11 : 11;
+    unsigned int chan12 : 11;
+    unsigned int chan13 : 11;
+    unsigned int chan14 : 11;
+    unsigned int chan15 : 11;
+} __attribute__ ((__packed__));
+
+typedef struct crsfPayloadRcChannelsPacked2_s crsfPayloadRcChannelsPacked2_t;
+
 typedef struct crsfPayloadLinkStatistics_s {
     uint8_t     uplinkRSSIAnt1;
     uint8_t     uplinkRSSIAnt2;
@@ -207,15 +229,15 @@ STATIC_UNIT_TESTED uint8_t crsfFrameStatus2(rxRuntimeConfig_t *rxRuntimeConfig)
             crsfFrame.frame.frameLength = CRSF_FRAME_RC_CHANNELS_PAYLOAD_SIZE + CRSF_FRAME_LENGTH_TYPE_CRC;
 
             // unpack the RC channels
-            const crsfPayloadRcChannelsPacked_t* rcChannels = (crsfPayloadRcChannelsPacked_t*)&crsfFrame.frame.payload;
-            crsfChannelData[8] = rcChannels->chan0;
-            crsfChannelData[9] = rcChannels->chan1;
-            crsfChannelData[10] = rcChannels->chan2;
-            crsfChannelData[11] = rcChannels->chan3;
-            crsfChannelData[12] = rcChannels->chan4;
-            crsfChannelData[13] = rcChannels->chan5;
-            crsfChannelData[14] = rcChannels->chan6;
-            crsfChannelData[15] = rcChannels->chan7;
+            const crsfPayloadRcChannelsPacked2_t* rcChannels2 = (crsfPayloadRcChannelsPacked2_t*)&crsfFrame.frame.payload;
+            crsfChannelData[8] = rcChannels2->chan0;
+            crsfChannelData[9] = rcChannels2->chan1;
+            crsfChannelData[10] = rcChannels2->chan2;
+            crsfChannelData[11] = rcChannels2->chan3;
+            crsfChannelData[12] = rcChannels2->chan4;
+            crsfChannelData[13] = rcChannels2->chan5;
+            crsfChannelData[14] = rcChannels2->chan6;
+            crsfChannelData[15] = rcChannels2->chan7;
 
             
             return RX_FRAME_COMPLETE;
@@ -274,14 +296,14 @@ STATIC_UNIT_TESTED uint8_t crsfFrameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
 
             // unpack the RC channels
             const crsfPayloadRcChannelsPacked_t* rcChannels = (crsfPayloadRcChannelsPacked_t*)&crsfFrame.frame.payload;
-            crsfChannelData[0] = rcChannels->chan4;
-            crsfChannelData[1] = rcChannels->chan5;
-            crsfChannelData[2] = rcChannels->chan6;
-            crsfChannelData[3] = rcChannels->chan7;
-            crsfChannelData[4] = rcChannels->chan0;
-            crsfChannelData[5] = rcChannels->chan1;
-            crsfChannelData[6] = rcChannels->chan2;
-            crsfChannelData[7] = rcChannels->chan3;
+            crsfChannelData[0] = rcChannels->chan0;
+            crsfChannelData[1] = rcChannels->chan1;
+            crsfChannelData[2] = rcChannels->chan2;
+            crsfChannelData[3] = rcChannels->chan3;
+            crsfChannelData[4] = rcChannels->chan4;
+            crsfChannelData[5] = rcChannels->chan5;
+            crsfChannelData[6] = rcChannels->chan6;
+            crsfChannelData[7] = rcChannels->chan7;
 
 
             
