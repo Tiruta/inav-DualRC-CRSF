@@ -168,6 +168,9 @@ serialPort_t *openSerialPort(
     portMode_t mode,
     portOptions_t options
 );
+
+
+
 void closeSerialPort(serialPort_t *serialPort);
 
 void waitForSerialPortToFinishTransmitting(serialPort_t *serialPort);

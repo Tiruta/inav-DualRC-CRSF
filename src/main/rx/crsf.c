@@ -52,9 +52,9 @@
 
 //added by Tirta
 
-//STATIC_UNIT_TESTED bool crsfFrameDone = false;
+STATIC_UNIT_TESTED bool crsfFrameDone = false;
 STATIC_UNIT_TESTED bool crsfFrameDone2 = false;
-//STATIC_UNIT_TESTED crsfFrame_t crsfFrame;
+STATIC_UNIT_TESTED crsfFrame_t crsfFrame;
 STATIC_UNIT_TESTED crsfFrame_t crsfFrame2;
 
 STATIC_UNIT_TESTED uint32_t crsfChannelData[CRSF_MAX_CHANNEL];
@@ -64,6 +64,9 @@ static serialPort_t *serialPort2;
 static timeUs_t crsfFrameStartAt = 0;
 static uint8_t telemetryBuf[CRSF_FRAME_SIZE_MAX];
 static uint8_t telemetryBufLen = 0;
+
+rxRuntimeConfig_t rxRuntimeConfig2;
+rxConfig_t rxConfig2;
 
 const uint16_t crsfTxPowerStatesmW[CRSF_POWER_COUNT] = {0, 10, 25, 100, 500, 1000, 2000, 250, 50};
 
@@ -153,7 +156,7 @@ typedef struct crsfPayloadLinkStatistics_s {
 
 typedef struct crsfPayloadLinkStatistics_s crsfPayloadLinkStatistics_t;
 
-/*
+
 STATIC_UNIT_TESTED uint8_t crsfFrameCRC(void)
 {
     // CRC includes type and payload
@@ -163,7 +166,7 @@ STATIC_UNIT_TESTED uint8_t crsfFrameCRC(void)
     }
     return crc;
 }
-*/
+
 
 
 STATIC_UNIT_TESTED uint8_t crsfFrameCRC2(void)
@@ -177,7 +180,7 @@ STATIC_UNIT_TESTED uint8_t crsfFrameCRC2(void)
 }
 
 // Receive ISR callback, called back from serial port
-/*
+
 STATIC_UNIT_TESTED void crsfDataReceive(uint16_t c, void *rxCallbackData)
 {
     UNUSED(rxCallbackData);
@@ -227,7 +230,7 @@ STATIC_UNIT_TESTED void crsfDataReceive(uint16_t c, void *rxCallbackData)
         }
     }
 }
-*/
+
 
 STATIC_UNIT_TESTED void crsfDataReceive2(uint16_t c, void *rxCallbackData)
 {
@@ -280,9 +283,9 @@ STATIC_UNIT_TESTED void crsfDataReceive2(uint16_t c, void *rxCallbackData)
 }
 
 
-STATIC_UNIT_TESTED uint8_t crsfFrameStatus2(rxRuntimeConfig_t *rxRuntimeConfig)
+STATIC_UNIT_TESTED uint8_t crsfFrameStatus2(rxRuntimeConfig_t *rxRuntimeConfig2)
 {
-    UNUSED(rxRuntimeConfig);
+    UNUSED(rxRuntimeConfig2);
 
     if (crsfFrameDone2) {
         crsfFrameDone2 = false;
@@ -296,18 +299,14 @@ STATIC_UNIT_TESTED uint8_t crsfFrameStatus2(rxRuntimeConfig_t *rxRuntimeConfig)
 
             // unpack the RC channels
             const crsfPayloadRcChannelsPacked2_t* rcChannels2 = (crsfPayloadRcChannelsPacked2_t*)&crsfFrame2.frame.payload;
-            crsfChannelData[17] = rcChannels2->chan0b;
-            crsfChannelData[18] = rcChannels2->chan1b;
-            crsfChannelData[19] = rcChannels2->chan2b;
-            crsfChannelData[20] = rcChannels2->chan3b;
-            crsfChannelData[21] = rcChannels2->chan4b;
-            crsfChannelData[22] = rcChannels2->chan5b;
-            crsfChannelData[23] = rcChannels2->chan6b;
-            crsfChannelData[24] = rcChannels2->chan7b;
-            crsfChannelData[25] = rcChannels2->chan8b;
-            crsfChannelData[26] = rcChannels2->chan9b;
-            crsfChannelData[27] = rcChannels2->chan10b;
-            crsfChannelData[28] = rcChannels2->chan11b;
+            crsfChannelData[8] = rcChannels2->chan0b;
+            crsfChannelData[9] = rcChannels2->chan1b;
+            crsfChannelData[10] = rcChannels2->chan2b;
+            crsfChannelData[11] = rcChannels2->chan3b;
+            crsfChannelData[12] = rcChannels2->chan4b;
+            crsfChannelData[13] = rcChannels2->chan5b;
+            crsfChannelData[14] = rcChannels2->chan6b;
+            crsfChannelData[15] = rcChannels2->chan7b;
 
             return RX_FRAME_COMPLETE;
         }
@@ -337,9 +336,9 @@ STATIC_UNIT_TESTED uint8_t crsfFrameStatus2(rxRuntimeConfig_t *rxRuntimeConfig)
                     uplinkStrength = 99;
                 else if (rxLinkStatistics.uplinkRSSI < osdConfig()->rssi_dbm_min)
                     uplinkStrength = 0;
-                lqTrackerSet(rxRuntimeConfig->lqTracker, scaleRange(uplinkStrength, 0, 99, 0, RSSI_MAX_VALUE));
+                lqTrackerSet(rxRuntimeConfig2->lqTracker, scaleRange(uplinkStrength, 0, 99, 0, RSSI_MAX_VALUE));
             } else {
-                lqTrackerSet(rxRuntimeConfig->lqTracker, 0);
+                lqTrackerSet(rxRuntimeConfig2->lqTracker, 0);
             }
 #endif
             // This is not RC channels frame, update channel value but don't indicate frame completion
@@ -349,7 +348,7 @@ STATIC_UNIT_TESTED uint8_t crsfFrameStatus2(rxRuntimeConfig_t *rxRuntimeConfig)
     return RX_FRAME_PENDING;
 }
 
-/*
+
 STATIC_UNIT_TESTED uint8_t crsfFrameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
 {
     UNUSED(rxRuntimeConfig);
@@ -416,9 +415,9 @@ STATIC_UNIT_TESTED uint8_t crsfFrameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
     }
     return RX_FRAME_PENDING;
 }
-*/
 
-/*
+
+
 STATIC_UNIT_TESTED uint16_t crsfReadRawRC(const rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan)
 {
     UNUSED(rxRuntimeConfig);
@@ -432,12 +431,12 @@ STATIC_UNIT_TESTED uint16_t crsfReadRawRC(const rxRuntimeConfig_t *rxRuntimeConf
      
     return (crsfChannelData[chan] * 1024 / 1639) + 881;
 }
-*/
 
 
-STATIC_UNIT_TESTED uint16_t crsfReadRawRC2(const rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan)
+
+STATIC_UNIT_TESTED uint16_t crsfReadRawRC2(const rxRuntimeConfig_t *rxRuntimeConfig2, uint8_t chan)
 {
-    UNUSED(rxRuntimeConfig);
+    UNUSED(rxRuntimeConfig2);
     /* conversion from RC value to PWM
      *       RC     PWM
      * min  172 ->  988us
@@ -475,7 +474,7 @@ void crsfRxSendTelemetryData(void)
     }
 }
 
-/*
+
 bool crsfRxInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
 {
     for (int ii = 0; ii < CRSF_MAX_CHANNEL; ++ii) {
@@ -500,19 +499,24 @@ bool crsfRxInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
         CRSF_PORT_OPTIONS | (tristateWithDefaultOffIsActive(rxConfig->halfDuplex) ? SERIAL_BIDIR : 0)
         );
 
+    rxRuntimeConfig2 = *rxRuntimeConfig;
+
+    crsfRxInit2(rxConfig, &rxRuntimeConfig2);
+
     return serialPort != NULL;
 }
-*/
 
-bool crsfRxInit2(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
+
+
+bool crsfRxInit2(const rxConfig_t *rxConfig2, rxRuntimeConfig_t *rxRuntimeConfig2)
 {
-    for (int ii = 0; ii < CRSF_MAX_CHANNEL; ++ii) {
-        crsfChannelData[ii] = (16 * PWM_RANGE_MIDDLE) / 10 - 1408;
-    }
+    //for (int ii = 0; ii < CRSF_MAX_CHANNEL; ++ii) {
+    //    crsfChannelData[ii] = (16 * PWM_RANGE_MIDDLE) / 10 - 1408;
+    //}
 
-    rxRuntimeConfig->channelCount = 17;
-    rxRuntimeConfig->rcReadRawFn = crsfReadRawRC2;
-    rxRuntimeConfig->rcFrameStatusFn = crsfFrameStatus2;
+    rxRuntimeConfig2->channelCount = CRSF_MAX_CHANNEL;
+    rxRuntimeConfig2->rcReadRawFn = crsfReadRawRC2;
+    rxRuntimeConfig2->rcFrameStatusFn = crsfFrameStatus2;
 
     const serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);
     if (!portConfig) {
@@ -525,14 +529,15 @@ bool crsfRxInit2(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
         NULL,
         CRSF_BAUDRATE,
         CRSF_PORT_MODE,
-        CRSF_PORT_OPTIONS | (tristateWithDefaultOffIsActive(rxConfig->halfDuplex) ? SERIAL_BIDIR : 0)
+        CRSF_PORT_OPTIONS | (tristateWithDefaultOffIsActive(rxConfig2->halfDuplex) ? SERIAL_BIDIR : 0)
         );
 
     return serialPort2 != NULL;
 }
 
+
 bool crsfRxIsActive(void)
 {
-    return serialPort2 != NULL;
+    return serialPort != NULL;
 }
 #endif
