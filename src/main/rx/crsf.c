@@ -53,7 +53,9 @@
 //added by Tirta
 
 STATIC_UNIT_TESTED bool crsfFrameDone = false;
+STATIC_UNIT_TESTED bool crsfFrameDone2 = false;
 STATIC_UNIT_TESTED crsfFrame_t crsfFrame;
+STATIC_UNIT_TESTED crsfFrame_t crsfFrame2;
 
 STATIC_UNIT_TESTED uint32_t crsfChannelData[CRSF_MAX_CHANNEL];
 
@@ -115,22 +117,22 @@ typedef struct crsfPayloadRcChannelsPacked_s crsfPayloadRcChannelsPacked_t;
 
 struct crsfPayloadRcChannelsPacked2_s {
     // 176 bits of data (11 bits per channel * 16 channels) = 22 bytes.
-    unsigned int chan0 : 11;
-    unsigned int chan1 : 11;
-    unsigned int chan2 : 11;
-    unsigned int chan3 : 11;
-    unsigned int chan4 : 11;
-    unsigned int chan5 : 11;
-    unsigned int chan6 : 11;
-    unsigned int chan7 : 11;
-    unsigned int chan8 : 11;
-    unsigned int chan9 : 11;
-    unsigned int chan10 : 11;
-    unsigned int chan11 : 11;
-    unsigned int chan12 : 11;
-    unsigned int chan13 : 11;
-    unsigned int chan14 : 11;
-    unsigned int chan15 : 11;
+    unsigned int chan0b : 11;
+    unsigned int chan1b : 11;
+    unsigned int chan2b : 11;
+    unsigned int chan3b : 11;
+    unsigned int chan4b : 11;
+    unsigned int chan5b : 11;
+    unsigned int chan6b : 11;
+    unsigned int chan7b : 11;
+    unsigned int chan8b : 11;
+    unsigned int chan9b : 11;
+    unsigned int chan10b : 11;
+    unsigned int chan11b : 11;
+    unsigned int chan12b : 11;
+    unsigned int chan13b : 11;
+    unsigned int chan14b : 11;
+    unsigned int chan15b : 11;
 } __attribute__ ((__packed__));
 
 typedef struct crsfPayloadRcChannelsPacked2_s crsfPayloadRcChannelsPacked2_t;
@@ -218,26 +220,26 @@ STATIC_UNIT_TESTED uint8_t crsfFrameStatus2(rxRuntimeConfig_t *rxRuntimeConfig)
 {
     UNUSED(rxRuntimeConfig);
 
-    if (crsfFrameDone) {
-        crsfFrameDone = false;
-        if (crsfFrame.frame.type == CRSF_FRAMETYPE_RC_CHANNELS_PACKED) {
+    if (crsfFrameDone2) {
+        crsfFrameDone2 = false;
+        if (crsfFrame2.frame.type == CRSF_FRAMETYPE_RC_CHANNELS_PACKED) {
             // CRC includes type and payload of each frame
             const uint8_t crc = crsfFrameCRC();
-            if (crc != crsfFrame.frame.payload[CRSF_FRAME_RC_CHANNELS_PAYLOAD_SIZE]) {
+            if (crc != crsfFrame2.frame.payload[CRSF_FRAME_RC_CHANNELS_PAYLOAD_SIZE]) {
                 return RX_FRAME_PENDING;
             }
-            crsfFrame.frame.frameLength = CRSF_FRAME_RC_CHANNELS_PAYLOAD_SIZE + CRSF_FRAME_LENGTH_TYPE_CRC;
+            crsfFrame2.frame.frameLength = CRSF_FRAME_RC_CHANNELS_PAYLOAD_SIZE + CRSF_FRAME_LENGTH_TYPE_CRC;
 
             // unpack the RC channels
-            const crsfPayloadRcChannelsPacked2_t* rcChannels2 = (crsfPayloadRcChannelsPacked2_t*)&crsfFrame.frame.payload;
-            crsfChannelData[8] = rcChannels2->chan0;
-            crsfChannelData[9] = rcChannels2->chan1;
-            crsfChannelData[10] = rcChannels2->chan2;
-            crsfChannelData[11] = rcChannels2->chan3;
-            crsfChannelData[12] = rcChannels2->chan4;
-            crsfChannelData[13] = rcChannels2->chan5;
-            crsfChannelData[14] = rcChannels2->chan6;
-            crsfChannelData[15] = rcChannels2->chan7;
+            const crsfPayloadRcChannelsPacked2_t* rcChannels2 = (crsfPayloadRcChannelsPacked2_t*)&crsfFrame2.frame.payload;
+            crsfChannelData[8] = rcChannels2->chan0b;
+            crsfChannelData[9] = rcChannels2->chan1b;
+            crsfChannelData[10] = rcChannels2->chan2b;
+            crsfChannelData[11] = rcChannels2->chan3b;
+            crsfChannelData[12] = rcChannels2->chan4b;
+            crsfChannelData[13] = rcChannels2->chan5b;
+            crsfChannelData[14] = rcChannels2->chan6b;
+            crsfChannelData[15] = rcChannels2->chan7b;
 
             
             return RX_FRAME_COMPLETE;
@@ -360,6 +362,8 @@ STATIC_UNIT_TESTED uint16_t crsfReadRawRC(const rxRuntimeConfig_t *rxRuntimeConf
      */
     return (crsfChannelData[chan] * 1024 / 1639) + 881;
 }
+
+
 
 void crsfRxWriteTelemetryData(const void *data, int len)
 {
