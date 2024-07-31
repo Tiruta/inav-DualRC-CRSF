@@ -60,6 +60,7 @@ STATIC_UNIT_TESTED crsfFrame_t crsfFrame2;
 STATIC_UNIT_TESTED uint32_t crsfChannelData[CRSF_MAX_CHANNEL];
 
 static serialPort_t *serialPort;
+static serialPort_t *serialPort2;
 static timeUs_t crsfFrameStartAt = 0;
 static uint8_t telemetryBuf[CRSF_FRAME_SIZE_MAX];
 static uint8_t telemetryBufLen = 0;
@@ -175,16 +176,13 @@ STATIC_UNIT_TESTED void crsfDataReceive(uint16_t c, void *rxCallbackData)
 #endif
 
     if (now > crsfFrameStartAt + CRSF_TIME_NEEDED_PER_FRAME_US) {
-        // We've received a character after max time needed to complete a frame,
-        // so this must be the start of a new frame.
         crsfFramePosition = 0;
     }
 
     if (crsfFramePosition == 0) {
         crsfFrameStartAt = now;
     }
-    // assume frame is 5 bytes long until we have received the frame length
-    // full frame length includes the length of the address and framelength fields
+
     const int fullFrameLength = crsfFramePosition < 3 ? 5 : crsfFrame.frame.frameLength + CRSF_FRAME_LENGTH_ADDRESS + CRSF_FRAME_LENGTH_FRAMELENGTH;
 
     if (crsfFramePosition < fullFrameLength) {
@@ -215,6 +213,57 @@ STATIC_UNIT_TESTED void crsfDataReceive(uint16_t c, void *rxCallbackData)
         }
     }
 }
+
+STATIC_UNIT_TESTED void crsfDataReceive2(uint16_t c, void *rxCallbackData)
+{
+    UNUSED(rxCallbackData);
+
+    static uint8_t crsfFramePosition2 = 0;
+    const timeUs_t now = micros();
+
+#ifdef DEBUG_CRSF_PACKETS
+    debug[2] = now - crsfFrameStartAt;
+#endif
+
+    if (now > crsfFrameStartAt + CRSF_TIME_NEEDED_PER_FRAME_US) {
+        crsfFramePosition2 = 0;
+    }
+
+    if (crsfFramePosition2 == 0) {
+        crsfFrameStartAt = now;
+    }
+
+    const int fullFrameLength = crsfFramePosition2 < 3 ? 5 : crsfFrame2.frame.frameLength + CRSF_FRAME_LENGTH_ADDRESS + CRSF_FRAME_LENGTH_FRAMELENGTH;
+
+    if (crsfFramePosition2 < fullFrameLength) {
+        crsfFrame2.bytes[crsfFramePosition2++] = (uint8_t)c;
+        crsfFrameDone2 = crsfFramePosition2 < fullFrameLength ? false : true;
+        if (crsfFrameDone2) {
+            crsfFramePosition2 = 0;
+            if (crsfFrame2.frame.type != CRSF_FRAMETYPE_RC_CHANNELS_PACKED) {
+                const uint8_t crc = crsfFrameCRC();
+                if (crc == crsfFrame2.bytes[fullFrameLength - 1]) {
+                    switch (crsfFrame2.frame.type)
+                    {
+#if defined(USE_MSP_OVER_TELEMETRY)
+                        case CRSF_FRAMETYPE_MSP_REQ:
+                        case CRSF_FRAMETYPE_MSP_WRITE: {
+                            uint8_t *frameStart = (uint8_t *)&crsfFrame2.frame.payload + CRSF_FRAME_ORIGIN_DEST_SIZE;
+                            if (bufferCrsfMspFrame(frameStart, CRSF_FRAME_RX_MSP_FRAME_SIZE)) {
+                                crsfScheduleMspResponse();
+                            }
+                            break;
+                        }
+#endif
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 STATIC_UNIT_TESTED uint8_t crsfFrameStatus2(rxRuntimeConfig_t *rxRuntimeConfig)
 {
@@ -432,16 +481,16 @@ bool crsfRxInit2(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
         return false;
     }
 
-    serialPort = openSerialPort(6,
+    serialPort2 = openSerialPort(6,
         FUNCTION_RX_SERIAL,
-        crsfDataReceive,
+        crsfDataReceive2,
         NULL,
         CRSF_BAUDRATE,
         CRSF_PORT_MODE,
         CRSF_PORT_OPTIONS | (tristateWithDefaultOffIsActive(rxConfig->halfDuplex) ? SERIAL_BIDIR : 0)
         );
 
-    return serialPort != NULL;
+    return serialPort2 != NULL;
 }
 
 bool crsfRxIsActive(void)
