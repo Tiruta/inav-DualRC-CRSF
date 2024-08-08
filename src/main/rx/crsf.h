@@ -119,6 +119,7 @@ typedef union crsfFrame_u {
 
 void crsfRxWriteTelemetryData(const void *data, int len);
 void crsfRxSendTelemetryData(void);
+void TransferDataRX1(void);
 
 struct rxConfig_s;
 struct rxRuntimeConfig_s;

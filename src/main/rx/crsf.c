@@ -59,6 +59,9 @@ STATIC_UNIT_TESTED crsfFrame_t crsfFrame2;
 
 STATIC_UNIT_TESTED uint32_t crsfChannelData[CRSF_MAX_CHANNEL];
 
+uint32_t crsfChannelRX1[CRSF_MAX_CHANNEL];
+uint32_t crsfChannelRX2[CRSF_MAX_CHANNEL];
+
 static serialPort_t *serialPort;
 static timeUs_t crsfFrameStartAt = 0;
 static uint8_t telemetryBuf[CRSF_FRAME_SIZE_MAX];
@@ -298,22 +301,22 @@ STATIC_UNIT_TESTED uint8_t crsfFrameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
 
             // unpack the RC channels
             const crsfPayloadRcChannelsPacked_t* rcChannels = (crsfPayloadRcChannelsPacked_t*)&crsfFrame.frame.payload;
-            crsfChannelData[0] = rcChannels->chan0;
-            crsfChannelData[1] = rcChannels->chan1;
-            crsfChannelData[2] = rcChannels->chan2;
-            crsfChannelData[3] = rcChannels->chan3;
-            crsfChannelData[4] = rcChannels->chan4;
-            crsfChannelData[5] = rcChannels->chan5;
-            crsfChannelData[6] = rcChannels->chan6;
-            crsfChannelData[7] = rcChannels->chan7;
-            crsfChannelData[8] = rcChannels->chan8;
-            crsfChannelData[9] = rcChannels->chan9;
-            crsfChannelData[10] = rcChannels->chan10;
-            crsfChannelData[11] = rcChannels->chan11;
-            crsfChannelData[12] = rcChannels->chan12;
-            crsfChannelData[13] = rcChannels->chan13;
-            crsfChannelData[14] = rcChannels->chan14;
-            crsfChannelData[15] = rcChannels->chan15;
+            crsfChannelRX1[0] = rcChannels->chan0;
+            crsfChannelRX1[1] = rcChannels->chan1;
+            crsfChannelRX1[2] = rcChannels->chan2;
+            crsfChannelRX1[3] = rcChannels->chan3;
+            crsfChannelRX1[4] = rcChannels->chan4;
+            crsfChannelRX1[5] = rcChannels->chan5;
+            crsfChannelRX1[6] = rcChannels->chan6;
+            crsfChannelRX1[7] = rcChannels->chan7;
+            crsfChannelRX1[8] = rcChannels->chan8;
+            crsfChannelRX1[9] = rcChannels->chan9;
+            crsfChannelRX1[10] = rcChannels->chan10;
+            crsfChannelRX1[11] = rcChannels->chan11;
+            crsfChannelRX1[12] = rcChannels->chan12;
+            crsfChannelRX1[13] = rcChannels->chan13;
+            crsfChannelRX1[14] = rcChannels->chan14;
+            crsfChannelRX1[15] = rcChannels->chan15;
 
 
             
@@ -371,7 +374,24 @@ STATIC_UNIT_TESTED uint16_t crsfReadRawRC(const rxRuntimeConfig_t *rxRuntimeConf
     return (crsfChannelData[chan] * 1024 / 1639) + 881;
 }
 
-
+void TransferDataRX1(){
+    crsfChannelData[0] = crsfChannelRX1[0];
+    crsfChannelData[1] = crsfChannelRX1[1];
+    crsfChannelData[2] = crsfChannelRX1[2];
+    crsfChannelData[3] = crsfChannelRX1[3];
+    crsfChannelData[4] = crsfChannelRX1[4];
+    crsfChannelData[5] = crsfChannelRX1[5];
+    crsfChannelData[6] = crsfChannelRX1[6];
+    crsfChannelData[7] = crsfChannelRX1[7];
+    crsfChannelData[8] = crsfChannelRX1[8];
+    crsfChannelData[9] = crsfChannelRX1[9];
+    crsfChannelData[10] = crsfChannelRX1[10];
+    crsfChannelData[11] = crsfChannelRX1[11];
+    crsfChannelData[12] = crsfChannelRX1[12];
+    crsfChannelData[13] = crsfChannelRX1[13];
+    crsfChannelData[14] = crsfChannelRX1[14];
+    crsfChannelData[15] = crsfChannelRX1[15];
+}
 
 void crsfRxWriteTelemetryData(const void *data, int len)
 {
@@ -407,6 +427,7 @@ bool crsfRxInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
     rxRuntimeConfig->channelCount = CRSF_MAX_CHANNEL;
     rxRuntimeConfig->rcReadRawFn = crsfReadRawRC;
     rxRuntimeConfig->rcFrameStatusFn = crsfFrameStatus;
+    TransferDataRX1();
 
     const serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);
     if (!portConfig) {
