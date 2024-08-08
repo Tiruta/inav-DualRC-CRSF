@@ -306,6 +306,14 @@ STATIC_UNIT_TESTED uint8_t crsfFrameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
             crsfChannelData[5] = rcChannels->chan5;
             crsfChannelData[6] = rcChannels->chan6;
             crsfChannelData[7] = rcChannels->chan7;
+            crsfChannelData[8] = rcChannels->chan8;
+            crsfChannelData[9] = rcChannels->chan9;
+            crsfChannelData[10] = rcChannels->chan10;
+            crsfChannelData[11] = rcChannels->chan11;
+            crsfChannelData[12] = rcChannels->chan12;
+            crsfChannelData[13] = rcChannels->chan13;
+            crsfChannelData[14] = rcChannels->chan14;
+            crsfChannelData[15] = rcChannels->chan15;
 
 
             

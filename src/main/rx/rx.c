@@ -223,7 +223,7 @@ bool serialRxInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig
     case SERIALRX_CRSF:
         enabled2 = crsfRxInit2(rxConfig, rxRuntimeConfig);
         enabled = crsfRxInit(rxConfig, rxRuntimeConfig);
-        if (enabled2 == true && enabled ==true){
+        if (enabled2 == true || enabled ==true){
             enabled = true;
         }
         break;
