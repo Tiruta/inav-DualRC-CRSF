@@ -221,11 +221,11 @@ bool serialRxInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig
 #endif
 #ifdef USE_SERIALRX_CRSF
     case SERIALRX_CRSF:
-        enabled2 = crsfRxInit2(rxConfig, rxRuntimeConfig);
+        //enabled2 = crsfRxInit2(rxConfig, rxRuntimeConfig);
         enabled = crsfRxInit(rxConfig, rxRuntimeConfig);
-        if (enabled2 == true || enabled ==true){
-            enabled = true;
-        }
+        //if (enabled2 == true || enabled ==true){
+        //    enabled = true;
+        //}
         break;
 #endif
 #ifdef USE_SERIALRX_FPORT
@@ -337,6 +337,7 @@ void rxInit(void)
     }
 #endif
 
+    crsf2OverrideInit();
     rxChannelCount = MIN(MAX_SUPPORTED_RC_CHANNEL_COUNT, rxRuntimeConfig.channelCount);
 }
 
@@ -447,6 +448,7 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
 {
     int16_t rcStaging[MAX_SUPPORTED_RC_CHANNEL_COUNT];
     const timeMs_t currentTimeMs = millis();
+    int rcOverrideFlag;
 
 #if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
     if ((rxConfig()->receiverType != RX_TYPE_MSP) && mspOverrideDataProcessingRequired) {
@@ -496,6 +498,10 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
             }
         } else {
             rcChannels[channel].expiresAt = currentTimeMs + MAX_INVALID_RX_PULSE_TIME;
+        }
+
+        if (channel == 6){
+            rcOverrideFlag = sample;
         }
 
         // Save channel value

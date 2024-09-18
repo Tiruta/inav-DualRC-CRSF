@@ -21,7 +21,7 @@
 #define CRSF_PORT_OPTIONS       (SERIAL_STOPBITS_1 | SERIAL_PARITY_NO)
 #define CRSF_PORT_MODE          MODE_RXTX
 
-#define CRSF_MAX_CHANNEL        34
+#define CRSF_MAX_CHANNEL        17
 
 enum { CRSF_SYNC_BYTE = 0xC8 };
 
@@ -119,6 +119,7 @@ typedef union crsfFrame_u {
 
 void crsfRxWriteTelemetryData(const void *data, int len);
 void crsfRxSendTelemetryData(void);
+void crsf2OverrideInit(void);
 
 struct rxConfig_s;
 struct rxRuntimeConfig_s;

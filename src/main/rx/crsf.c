@@ -64,6 +64,8 @@ static timeUs_t crsfFrameStartAt = 0;
 static uint8_t telemetryBuf[CRSF_FRAME_SIZE_MAX];
 static uint8_t telemetryBufLen = 0;
 
+static rxRuntimeConfig_t rxRuntimeConfigCRSF2;
+
 const uint16_t crsfTxPowerStatesmW[CRSF_POWER_COUNT] = {0, 10, 25, 100, 500, 1000, 2000, 250, 50};
 
 /*
@@ -450,6 +452,46 @@ bool crsfRxInit2(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
         );
 
     return serialPort != NULL;
+}
+
+void crsf2OverrideInit(void)
+{
+    crsfRxInit2(rxConfig(), &rxRuntimeConfigCRSF2);
+}
+
+void crsf2OverrideChannel(void){
+    int16_t rcStaging[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+
+    // Read and process channel data
+    for (int channel = 0; channel < rxChannelCount; channel++) {
+        const uint8_t rawChannel = calculateChannelRemapping(rxConfig()->rcmap, REMAPPABLE_CHANNEL_COUNT, channel);
+
+        // sample the channel
+        uint16_t sample = (*rxRuntimeConfigCRSF2.rcReadRawFn)(&rxRuntimeConfigCRSF2, rawChannel);
+
+        // apply the rx calibration to flight channel
+        if (channel < NON_AUX_CHANNEL_COUNT && sample != 0) {
+            sample = scaleRange(sample, rxChannelRangeConfigs(channel)->min, rxChannelRangeConfigs(channel)->max, PWM_RANGE_MIN, PWM_RANGE_MAX);
+            sample = MIN(MAX(PWM_PULSE_MIN, sample), PWM_PULSE_MAX);
+        }
+
+        // Store as rxRaw
+        rcChannels[channel].raw = sample;
+
+        // Apply invalid pulse value logic
+        if (!isRxPulseValid(sample)) {
+            sample = rcChannels[channel].data;   // hold channel, replace with old value
+            if ((currentTimeMs > rcChannels[channel].expiresAt) && (channel < NON_AUX_CHANNEL_COUNT)) {
+                rxFlightChannelsValid = false;
+            }
+        } else {
+            rcChannels[channel].expiresAt = currentTimeMs + MAX_INVALID_RX_PULSE_TIME;
+        }
+
+        // Save channel value
+        rcStaging[channel] = sample;
+    }
+
 }
 
 bool crsfRxIsActive(void)
