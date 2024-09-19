@@ -60,6 +60,7 @@ STATIC_UNIT_TESTED crsfFrame_t crsfFrame2;
 STATIC_UNIT_TESTED uint32_t crsfChannelData[CRSF_MAX_CHANNEL];
 
 static serialPort_t *serialPort;
+static serialPort_t *serialPort2;
 static timeUs_t crsfFrameStartAt = 0;
 static uint8_t telemetryBuf[CRSF_FRAME_SIZE_MAX];
 static uint8_t telemetryBufLen = 0;
@@ -427,22 +428,23 @@ bool crsfRxInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
     return serialPort != NULL;
 }
 
-bool crsfRxInit2(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
+bool crsfRxInit2(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig2)
 {
     for (int ii = 0; ii < CRSF_MAX_CHANNEL; ++ii) {
         crsfChannelData[ii] = (16 * PWM_RANGE_MIDDLE) / 10 - 1408;
     }
 
-    rxRuntimeConfig->channelCount = CRSF_MAX_CHANNEL;
-    rxRuntimeConfig->rcReadRawFn = crsfReadRawRC;
-    rxRuntimeConfig->rcFrameStatusFn = crsfFrameStatus2;
+    rxRuntimeConfig2->channelCount = CRSF_MAX_CHANNEL;
+    rxRuntimeConfig2->rcReadRawFn = crsfReadRawRC;
+    rxRuntimeConfig2->rcFrameStatusFn = crsfFrameStatus2;
 
     const serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);
     if (!portConfig) {
         return false;
     }
 
-    serialPort = openSerialPort(6,
+    
+    serialPort2 = openSerialPort(6,
         FUNCTION_RX_SERIAL,
         crsfDataReceive,
         NULL,
@@ -451,7 +453,12 @@ bool crsfRxInit2(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
         CRSF_PORT_OPTIONS | (tristateWithDefaultOffIsActive(rxConfig->halfDuplex) ? SERIAL_BIDIR : 0)
         );
 
-    return serialPort != NULL;
+    return serialPort2 != NULL;
+    
+}
+
+void rc2Close(void){
+    closeSerialPort(serialPort2);
 }
 
 void crsf2OverrideInit(void)
@@ -459,11 +466,12 @@ void crsf2OverrideInit(void)
     crsfRxInit2(rxConfig(), &rxRuntimeConfigCRSF2);
 }
 
+/*
 void crsf2OverrideChannel(void){
     int16_t rcStaging[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
     // Read and process channel data
-    for (int channel = 0; channel < rxChannelCount; channel++) {
+    for (int channel = 0; channel < 17; channel++) {
         const uint8_t rawChannel = calculateChannelRemapping(rxConfig()->rcmap, REMAPPABLE_CHANNEL_COUNT, channel);
 
         // sample the channel
@@ -493,6 +501,7 @@ void crsf2OverrideChannel(void){
     }
 
 }
+*/
 
 bool crsfRxIsActive(void)
 {

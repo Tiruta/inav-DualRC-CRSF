@@ -150,12 +150,17 @@ typedef struct rxLinkQualityTracker_s {
 
 
 struct rxRuntimeConfig_s;
+//struct rxRuntimeConfig2_s;
 typedef struct rxRuntimeConfig_s rxRuntimeConfig_t;
+//typedef struct rxRuntimeConfig2_s rxRuntimeConfig2_t;
 
 typedef uint16_t (*rcReadRawDataFnPtr)(const rxRuntimeConfig_t *rxRuntimeConfig, uint8_t chan); // used by receiver driver to return channel data
 typedef uint8_t (*rcFrameStatusFnPtr)(rxRuntimeConfig_t *rxRuntimeConfig);
 typedef bool (*rcProcessFrameFnPtr)(const rxRuntimeConfig_t *rxRuntimeConfig);
 typedef uint16_t (*rcGetLinkQualityPtr)(const rxRuntimeConfig_t *rxRuntimeConfig);
+
+
+
 
 typedef struct rxRuntimeConfig_s {
     uint8_t channelCount;                  // number of rc channels as reported by current input driver
@@ -167,6 +172,8 @@ typedef struct rxRuntimeConfig_s {
     uint16_t *channelData;
     void *frameData;
 } rxRuntimeConfig_t;
+
+
 
 typedef struct rcChannel_s {
     int16_t raw;        // Value received via RX - [1000;2000]
@@ -197,7 +204,8 @@ typedef uint8_t (*rcFrameStatusFnPtr)(rxRuntimeConfig_t *rxRuntimeConfig);
 typedef bool (*rcProcessFrameFnPtr)(const rxRuntimeConfig_t *rxRuntimeConfig);
 typedef uint16_t (*rcGetLinkQualityPtr)(const rxRuntimeConfig_t *rxRuntimeConfig);
 
-extern rxRuntimeConfig_t rxRuntimeConfig; //!!TODO remove this extern, only needed once for channelCount
+extern rxRuntimeConfig_t rxRuntimeConfig;
+extern rxRuntimeConfig_t rxRuntimeConfig2; //!!TODO remove this extern, only needed once for channelCount
 extern rxLinkStatistics_t rxLinkStatistics;
 void lqTrackerReset(rxLinkQualityTracker_e * lqTracker);
 void lqTrackerAccumulate(rxLinkQualityTracker_e * lqTracker, uint16_t rawValue);

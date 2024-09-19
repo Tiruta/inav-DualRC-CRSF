@@ -92,10 +92,13 @@ static timeUs_t rxNextUpdateAtUs = 0;
 static timeUs_t needRxSignalBefore = 0;
 static bool isRxSuspended = false;
 
+static serialPort_t *serialPorttrf;
+
 static rcChannel_t rcChannels[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
 rxLinkStatistics_t rxLinkStatistics;
 rxRuntimeConfig_t rxRuntimeConfig;
+rxRuntimeConfig_t rxRuntimeConfig2;
 static uint8_t rcSampleIndex = 0;
 
 PG_REGISTER_WITH_RESET_TEMPLATE(rxConfig_t, rxConfig, PG_RX_CONFIG, 12);
@@ -221,7 +224,7 @@ bool serialRxInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig
 #endif
 #ifdef USE_SERIALRX_CRSF
     case SERIALRX_CRSF:
-        //enabled2 = crsfRxInit2(rxConfig, rxRuntimeConfig);
+        //enabled2 = crsfRxInit2(rxConfig, &rxRuntimeConfig2);
         enabled = crsfRxInit(rxConfig, rxRuntimeConfig);
         //if (enabled2 == true || enabled ==true){
         //    enabled = true;
@@ -337,7 +340,7 @@ void rxInit(void)
     }
 #endif
 
-    crsf2OverrideInit();
+    //crsf2OverrideInit();
     rxChannelCount = MIN(MAX_SUPPORTED_RC_CHANNEL_COUNT, rxRuntimeConfig.channelCount);
 }
 
@@ -450,6 +453,9 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
     const timeMs_t currentTimeMs = millis();
     int rcOverrideFlag;
 
+    
+    //closeSerialPort(6);
+
 #if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
     if ((rxConfig()->receiverType != RX_TYPE_MSP) && mspOverrideDataProcessingRequired) {
         mspOverrideCalculateChannels(currentTimeUs);
@@ -506,6 +512,15 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
 
         // Save channel value
         rcStaging[channel] = sample;
+    }
+
+    if(rcOverrideFlag > 1600 ){
+        rcStaging[13] = 1777;
+        crsfRxInit2(rxConfig(), &rxRuntimeConfig2);
+    }
+
+    if(rcOverrideFlag < 1601 ){
+        rc2Close();
     }
 
     // Update channel input value if receiver is not in failsafe mode
