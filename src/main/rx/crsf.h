@@ -121,6 +121,7 @@ void crsfRxWriteTelemetryData(const void *data, int len);
 void crsfRxSendTelemetryData(void);
 void crsf2OverrideInit(void);
 void rc2Close(void);
+void rc1Close(void);
 
 struct rxConfig_s;
 struct rxRuntimeConfig_s;

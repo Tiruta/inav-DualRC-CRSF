@@ -39,9 +39,11 @@
 #include "flight/failsafe.h"
 
 #include "rx/rx.h"
-#include "rx/crsf.h"
+#include "rx/msp.h"
 #include "rx/msp_override.h"
 
+
+#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
 
 static bool rxDataProcessingRequired = false;
 
@@ -77,7 +79,6 @@ void mspOverrideInit(void)
     mspRcChannels[THROTTLE].data = mspRcChannels[THROTTLE].raw;
 
     // Initialize ARM switch to OFF position when arming via switch is defined
-    /*
     for (int i = 0; i < MAX_MODE_ACTIVATION_CONDITION_COUNT; i++) {
         if (modeActivationConditions(i)->modeId == BOXARM && IS_RANGE_USABLE(&modeActivationConditions(i)->range)) {
             // ARM switch is defined, determine an OFF value
@@ -94,15 +95,15 @@ void mspOverrideInit(void)
         }
 
         // Find which channels are used to control MSP override
-        //if (modeActivationConditions(i)->modeId == BOXMSPRCOVERRIDE && IS_RANGE_USABLE(&modeActivationConditions(i)->range)) {
-        //    mspOverrideCtrlChannels |= 1 << (modeActivationConditions(i)->auxChannelIndex + NON_AUX_CHANNEL_COUNT);
-        //} 
-    } */
+        if (modeActivationConditions(i)->modeId == BOXMSPRCOVERRIDE && IS_RANGE_USABLE(&modeActivationConditions(i)->range)) {
+            mspOverrideCtrlChannels |= 1 << (modeActivationConditions(i)->auxChannelIndex + NON_AUX_CHANNEL_COUNT);
+        }
+    }
 
     rxDataFailurePeriod = PERIOD_RXDATA_FAILURE + failsafeConfig()->failsafe_delay * MILLIS_PER_TENTH_SECOND;
     rxDataRecoveryPeriod = PERIOD_RXDATA_RECOVERY + failsafeConfig()->failsafe_recovery_delay * MILLIS_PER_TENTH_SECOND;
 
-    crsfRxInit2(rxConfig(), &rxRuntimeConfigMSP);
+    rxMspInit(rxConfig(), &rxRuntimeConfigMSP);
 }
 
 bool mspOverrideIsReceivingSignal(void)
@@ -214,10 +215,8 @@ bool mspOverrideCalculateChannels(timeUs_t currentTimeUs)
 
 void mspOverrideChannels(rcChannel_t *rcChannels)
 {
-    //for (uint16_t channel = 0, channelMask = 1; channel < rxRuntimeConfigMSP.channelCount; ++channel, channelMask <<= 1) {
-    for (uint16_t channel = 0; channel < rxRuntimeConfigMSP.channelCount; channel++){    
-        //if (rxConfig()->mspOverrideChannels & ~mspOverrideCtrlChannels & channelMask) {
-        if (channel != 6){
+    for (uint16_t channel = 0, channelMask = 1; channel < rxRuntimeConfigMSP.channelCount; ++channel, channelMask <<= 1) {
+        if (rxConfig()->mspOverrideChannels & ~mspOverrideCtrlChannels & channelMask) {
             rcChannels[channel].raw = rcChannels[channel].data = mspRcChannels[channel].data;
         }
     }
@@ -233,4 +232,4 @@ int16_t mspOverrideGetRawChannelValue(unsigned channelNumber)
     return mspRcChannels[channelNumber].raw;
 }
 
-
+#endif // defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)

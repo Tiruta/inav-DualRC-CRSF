@@ -165,6 +165,20 @@ STATIC_UNIT_TESTED uint8_t crsfFrameCRC(void)
     return crc;
 }
 
+static uint16_t nullReadRawRC(const rxRuntimeConfig_t *rxRuntimeConfig, uint8_t channel)
+{
+    UNUSED(rxRuntimeConfig);
+    UNUSED(channel);
+
+    return 0;
+}
+
+static uint8_t nullFrameStatus(rxRuntimeConfig_t *rxRuntimeConfig)
+{
+    UNUSED(rxRuntimeConfig);
+    return RX_FRAME_PENDING;
+}
+
 // Receive ISR callback, called back from serial port
 STATIC_UNIT_TESTED void crsfDataReceive(uint16_t c, void *rxCallbackData)
 {
@@ -457,8 +471,27 @@ bool crsfRxInit2(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig2
     
 }
 
+void rc1Close(void){
+rxRuntimeConfig.rcReadRawFn = nullReadRawRC;
+rxRuntimeConfig.rcFrameStatusFn = nullFrameStatus;
+
+    serialPort = openSerialPort(1,
+        FUNCTION_NONE,
+        NULL,
+        NULL,
+        CRSF_BAUDRATE,
+        CRSF_PORT_MODE,
+        CRSF_PORT_OPTIONS);
+}
+
 void rc2Close(void){
-    closeSerialPort(serialPort2);
+    serialPort2 = openSerialPort(6,
+        FUNCTION_NONE,
+        NULL,
+        NULL,
+        CRSF_BAUDRATE,
+        CRSF_PORT_MODE,
+        CRSF_PORT_OPTIONS);
 }
 
 void crsf2OverrideInit(void)

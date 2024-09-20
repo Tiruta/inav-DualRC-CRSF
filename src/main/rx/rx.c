@@ -80,9 +80,9 @@ static rssiSource_e activeRssiSource;
 static bool rxDataProcessingRequired = false;
 static bool auxiliaryProcessingRequired = false;
 
-#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
+//#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
 static bool mspOverrideDataProcessingRequired = false;
-#endif
+//#endif
 
 static bool rxSignalReceived = false;
 static bool rxFlightChannelsValid = false;
@@ -132,9 +132,9 @@ PG_RESET_TEMPLATE(rxConfig_t, rxConfig,
     .rcFilterFrequency = SETTING_RC_FILTER_LPF_HZ_DEFAULT,
     .autoSmooth = SETTING_RC_FILTER_AUTO_DEFAULT,
     .autoSmoothFactor = SETTING_RC_FILTER_SMOOTHING_FACTOR_DEFAULT,
-#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
-    .mspOverrideChannels = SETTING_MSP_OVERRIDE_CHANNELS_DEFAULT,
-#endif
+//#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
+//    .mspOverrideChannels = SETTING_MSP_OVERRIDE_CHANNELS_DEFAULT,
+//#endif
     .rssi_source = SETTING_RSSI_SOURCE_DEFAULT,
 #ifdef USE_SERIALRX_SRXL2
     .srxl2_unit_id = SETTING_SRXL2_UNIT_ID_DEFAULT,
@@ -186,7 +186,7 @@ bool isRxPulseValid(uint16_t pulseDuration)
 bool serialRxInit(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig)
 {
     bool enabled = false;
-    bool enabled2 = false;
+    //bool enabled2 = false;
     switch (rxConfig->serialrx_provider) {
 #ifdef USE_SERIALRX_SRXL2
     case SERIALRX_SRXL2:
@@ -341,6 +341,7 @@ void rxInit(void)
 #endif
 
     //crsf2OverrideInit();
+    mspOverrideInit();
     rxChannelCount = MIN(MAX_SUPPORTED_RC_CHANNEL_COUNT, rxRuntimeConfig.channelCount);
 }
 
@@ -437,12 +438,12 @@ bool rxUpdateCheck(timeUs_t currentTimeUs, timeDelta_t currentDeltaTime)
 
     bool result = rxDataProcessingRequired || auxiliaryProcessingRequired;
 
-#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
+//#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
     if (rxConfig()->receiverType != RX_TYPE_MSP) {
         mspOverrideDataProcessingRequired = mspOverrideUpdateCheck(currentTimeUs, currentDeltaTime);
         result = result || mspOverrideDataProcessingRequired;
     }
-#endif
+//#endif
 
     return result;
 }
@@ -452,15 +453,15 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
     int16_t rcStaging[MAX_SUPPORTED_RC_CHANNEL_COUNT];
     const timeMs_t currentTimeMs = millis();
     int rcOverrideFlag;
-
+    int rc2stat = 0;
     
     //closeSerialPort(6);
 
-#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
+//#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
     if ((rxConfig()->receiverType != RX_TYPE_MSP) && mspOverrideDataProcessingRequired) {
         mspOverrideCalculateChannels(currentTimeUs);
     }
-#endif
+//#endif
 
     if (auxiliaryProcessingRequired) {
         auxiliaryProcessingRequired = !rxRuntimeConfig.rcProcessFrameFn(&rxRuntimeConfig);
@@ -514,14 +515,24 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
         rcStaging[channel] = sample;
     }
 
-    if(rcOverrideFlag > 1600 ){
+    /*
+    if(rcOverrideFlag > 1600){
         rcStaging[13] = 1777;
+        //if(rc2stat < 1){
+        rc1Close();
         crsfRxInit2(rxConfig(), &rxRuntimeConfig2);
+        rc2stat = 1;
+        //}
     }
 
-    if(rcOverrideFlag < 1601 ){
-        rc2Close();
+    if(rcOverrideFlag < 1601){
+        //rcStaging[13] = 999;
+        //if(rc2stat > 0){
+            //rc2Close();
+        //    rc2stat = 0;
+        //}
     }
+    */
 
     // Update channel input value if receiver is not in failsafe mode
     // If receiver is in failsafe (not receiving signal or sending invalid channel values) - last good input values are retained
@@ -531,11 +542,12 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
         }
     }
 
-#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
-    if (IS_RC_MODE_ACTIVE(BOXMSPRCOVERRIDE) && !mspOverrideIsInFailsafe()) {
+//#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
+    //if (IS_RC_MODE_ACTIVE(BOXMSPRCOVERRIDE) && !mspOverrideIsInFailsafe()) {
+    if (rcStaging[6] > 1600) {
         mspOverrideChannels(rcChannels);
     }
-#endif
+//#endif
 
     // Update failsafe
     if (rxFlightChannelsValid && rxSignalReceived) {
