@@ -102,6 +102,10 @@ rxRuntimeConfig_t rxRuntimeConfig2;
 static uint8_t rcSampleIndex = 0;
 static int rcOverrideFlag = 0;
 
+int16_t rcDeliver[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+int16_t rcUART2[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+int16_t rcUART7[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+
 PG_REGISTER_WITH_RESET_TEMPLATE(rxConfig_t, rxConfig, PG_RX_CONFIG, 12);
 
 #ifndef SERIALRX_PROVIDER
@@ -344,6 +348,13 @@ void rxInit(void)
     //crsf2OverrideInit();
     //mspOverrideInit();
     crsfRxInit2(rxConfig(), &rxRuntimeConfig2);
+
+    for (int channel = 0; channel < rxChannelCount; channel++) {
+        rcDeliver[channel] = 1500;
+        rcUART2[channel] = 1500;
+        rcUART7[channel] = 1500;
+        }
+
     rxChannelCount = MIN(MAX_SUPPORTED_RC_CHANNEL_COUNT, rxRuntimeConfig.channelCount);
 }
 
@@ -453,12 +464,9 @@ bool rxUpdateCheck(timeUs_t currentTimeUs, timeDelta_t currentDeltaTime)
 bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
 {
     int16_t rcStaging[MAX_SUPPORTED_RC_CHANNEL_COUNT];
-    int16_t rcDeliver[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
-    int16_t rcUART2[MAX_SUPPORTED_RC_CHANNEL_COUNT];
-    int16_t rcUART7[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
-    const timeMs_t currentTimeMs = millis();
+    //const timeMs_t currentTimeMs = millis();
     
     //closeSerialPort(6);
 
@@ -515,9 +523,6 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
         */
 
         // Save channel value
-        rcDeliver[channel] = 1500;
-        rcUART2[channel] = 1500;
-        rcUART7[channel] = 1500;
         rcStaging[channel] = sample;
     }
 
@@ -545,15 +550,22 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
 
     rcDeliver[6] = rcOverrideFlag;
 
-    if (rcOverrideFlag < 1600){
+    if ((rcOverrideFlag < 1600) && rxFlightChannelsValid){
         for (int channel = 0; channel < rxChannelCount; channel++) {
             rcDeliver[channel] = rcUART2[channel];
         }
     }
 
-    if (rcOverrideFlag > 1600){
+    if ((rcOverrideFlag > 1600) && rxFlightChannelsValid){
         for (int channel = 0; channel < rxChannelCount; channel++) {
             rcDeliver[channel] = rcUART7[channel];
+        }
+    }
+
+    //if data is invalid then hold previous channel data
+    if (!rxFlightChannelsValid){
+        for (int channel = 0; channel < rxChannelCount; channel++) {
+            rcDeliver[channel] = rcChannels[channel].data;
         }
     }
 
