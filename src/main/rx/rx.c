@@ -81,7 +81,7 @@ static bool rxDataProcessingRequired = false;
 static bool auxiliaryProcessingRequired = false;
 
 //#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
-static bool mspOverrideDataProcessingRequired = false;
+//static bool mspOverrideDataProcessingRequired = false;
 //#endif
 
 static bool rxSignalReceived = false;
@@ -92,7 +92,7 @@ static timeUs_t rxNextUpdateAtUs = 0;
 static timeUs_t needRxSignalBefore = 0;
 static bool isRxSuspended = false;
 
-static serialPort_t *serialPorttrf;
+//static serialPort_t *serialPorttrf;
 
 static rcChannel_t rcChannels[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
@@ -100,6 +100,7 @@ rxLinkStatistics_t rxLinkStatistics;
 rxRuntimeConfig_t rxRuntimeConfig;
 rxRuntimeConfig_t rxRuntimeConfig2;
 static uint8_t rcSampleIndex = 0;
+static int rcOverrideFlag = 0;
 
 PG_REGISTER_WITH_RESET_TEMPLATE(rxConfig_t, rxConfig, PG_RX_CONFIG, 12);
 
@@ -334,14 +335,15 @@ void rxInit(void)
 
     rxUpdateRSSISource();
 
-#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
-    if (rxConfig()->receiverType != RX_TYPE_MSP) {
-        mspOverrideInit();
-    }
-#endif
+//#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
+//    if (rxConfig()->receiverType != RX_TYPE_MSP) {
+//       // mspOverrideInit();
+//    }
+//#endif
 
     //crsf2OverrideInit();
-    mspOverrideInit();
+    //mspOverrideInit();
+    crsfRxInit2(rxConfig(), &rxRuntimeConfig2);
     rxChannelCount = MIN(MAX_SUPPORTED_RC_CHANNEL_COUNT, rxRuntimeConfig.channelCount);
 }
 
@@ -439,10 +441,10 @@ bool rxUpdateCheck(timeUs_t currentTimeUs, timeDelta_t currentDeltaTime)
     bool result = rxDataProcessingRequired || auxiliaryProcessingRequired;
 
 //#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
-    if (rxConfig()->receiverType != RX_TYPE_MSP) {
-        mspOverrideDataProcessingRequired = mspOverrideUpdateCheck(currentTimeUs, currentDeltaTime);
-        result = result || mspOverrideDataProcessingRequired;
-    }
+    //if (rxConfig()->receiverType != RX_TYPE_MSP) {
+    //    mspOverrideDataProcessingRequired = mspOverrideUpdateCheck(currentTimeUs, currentDeltaTime);
+    //    result = result || mspOverrideDataProcessingRequired;
+    //}
 //#endif
 
     return result;
@@ -451,16 +453,19 @@ bool rxUpdateCheck(timeUs_t currentTimeUs, timeDelta_t currentDeltaTime)
 bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
 {
     int16_t rcStaging[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+    int16_t rcDeliver[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+
+    int16_t rcUART2[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+    int16_t rcUART7[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+
     const timeMs_t currentTimeMs = millis();
-    int rcOverrideFlag;
-    int rc2stat = 0;
     
     //closeSerialPort(6);
 
 //#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
-    if ((rxConfig()->receiverType != RX_TYPE_MSP) && mspOverrideDataProcessingRequired) {
-        mspOverrideCalculateChannels(currentTimeUs);
-    }
+    //if ((rxConfig()->receiverType != RX_TYPE_MSP) && mspOverrideDataProcessingRequired) {
+    //    mspOverrideCalculateChannels(currentTimeUs);
+    //}
 //#endif
 
     if (auxiliaryProcessingRequired) {
@@ -498,6 +503,7 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
         rcChannels[channel].raw = sample;
 
         // Apply invalid pulse value logic
+        /*
         if (!isRxPulseValid(sample)) {
             sample = rcChannels[channel].data;   // hold channel, replace with old value
             if ((currentTimeMs > rcChannels[channel].expiresAt) && (channel < NON_AUX_CHANNEL_COUNT)) {
@@ -506,13 +512,49 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
         } else {
             rcChannels[channel].expiresAt = currentTimeMs + MAX_INVALID_RX_PULSE_TIME;
         }
-
-        if (channel == 6){
-            rcOverrideFlag = sample;
-        }
+        */
 
         // Save channel value
+        rcDeliver[channel] = 1500;
+        rcUART2[channel] = 1500;
+        rcUART7[channel] = 1500;
         rcStaging[channel] = sample;
+    }
+
+    //check if rc is from UART2 or UART7
+    //if ch8 < 1100 and ch10 >1900 then this is UART2, Transmitter on UART2 should always be set to have this value on the respective channels
+    if ((rcStaging[7]<1100)){
+        for (int channel = 0; channel < rxChannelCount; channel++) {
+            rcUART2[channel] = rcStaging[channel];
+            //rcChannels[channel].expiresAt = currentTimeMs + MAX_INVALID_RX_PULSE_TIME;
+        }
+        rcOverrideFlag = rcUART2[6];
+        rcUART2[9] = 1222;
+    }
+
+    if ((rcStaging[7]>1900)){
+        for (int channel = 0; channel < rxChannelCount; channel++) {
+            rcUART7[channel] = rcStaging[channel];
+        }
+        rcUART7[9] = 1888;
+    }
+
+    if ((rcStaging[7]>1100) && (rcStaging[7]<1900)){
+        rxFlightChannelsValid = false;
+    }
+
+    rcDeliver[6] = rcOverrideFlag;
+
+    if (rcOverrideFlag < 1600){
+        for (int channel = 0; channel < rxChannelCount; channel++) {
+            rcDeliver[channel] = rcUART2[channel];
+        }
+    }
+
+    if (rcOverrideFlag > 1600){
+        for (int channel = 0; channel < rxChannelCount; channel++) {
+            rcDeliver[channel] = rcUART7[channel];
+        }
     }
 
     /*
@@ -538,15 +580,15 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
     // If receiver is in failsafe (not receiving signal or sending invalid channel values) - last good input values are retained
     if (rxFlightChannelsValid && rxSignalReceived) {
         for (int channel = 0; channel < rxChannelCount; channel++) {
-            rcChannels[channel].data = rcStaging[channel];
+            rcChannels[channel].data = rcDeliver[channel];
         }
     }
 
 //#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
     //if (IS_RC_MODE_ACTIVE(BOXMSPRCOVERRIDE) && !mspOverrideIsInFailsafe()) {
-    if (rcStaging[6] > 1600) {
-        mspOverrideChannels(rcChannels);
-    }
+    //if (rcStaging[6] > 1600) {
+    //    mspOverrideChannels(rcChannels);
+    //}
 //#endif
 
     // Update failsafe

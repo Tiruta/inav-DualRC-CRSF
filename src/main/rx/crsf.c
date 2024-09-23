@@ -58,6 +58,7 @@ STATIC_UNIT_TESTED crsfFrame_t crsfFrame;
 STATIC_UNIT_TESTED crsfFrame_t crsfFrame2;
 
 STATIC_UNIT_TESTED uint32_t crsfChannelData[CRSF_MAX_CHANNEL];
+STATIC_UNIT_TESTED uint32_t crsfChannelData2[CRSF_MAX_CHANNEL];
 
 static serialPort_t *serialPort;
 static serialPort_t *serialPort2;
@@ -249,14 +250,22 @@ STATIC_UNIT_TESTED uint8_t crsfFrameStatus2(rxRuntimeConfig_t *rxRuntimeConfig)
 
             // unpack the RC channels
             const crsfPayloadRcChannelsPacked2_t* rcChannels2 = (crsfPayloadRcChannelsPacked2_t*)&crsfFrame2.frame.payload;
-            crsfChannelData[8] = rcChannels2->chan0b;
-            crsfChannelData[9] = rcChannels2->chan1b;
-            crsfChannelData[10] = rcChannels2->chan2b;
-            crsfChannelData[11] = rcChannels2->chan3b;
-            crsfChannelData[12] = rcChannels2->chan4b;
-            crsfChannelData[13] = rcChannels2->chan5b;
-            crsfChannelData[14] = rcChannels2->chan6b;
-            crsfChannelData[15] = rcChannels2->chan7b;
+            crsfChannelData2[0] = rcChannels2->chan0b;
+            crsfChannelData2[1] = rcChannels2->chan1b;
+            crsfChannelData2[2] = rcChannels2->chan2b;
+            crsfChannelData2[3] = rcChannels2->chan3b;
+            crsfChannelData2[4] = rcChannels2->chan4b;
+            crsfChannelData2[5] = rcChannels2->chan5b;
+            crsfChannelData2[6] = rcChannels2->chan6b;
+            crsfChannelData2[7] = rcChannels2->chan7b;
+            crsfChannelData2[8] = rcChannels2->chan8b;
+            crsfChannelData2[9] = rcChannels2->chan9b;
+            crsfChannelData2[10] = rcChannels2->chan10b;
+            crsfChannelData2[11] = rcChannels2->chan11b;
+            crsfChannelData2[12] = rcChannels2->chan12b;
+            crsfChannelData2[13] = rcChannels2->chan13b;
+            crsfChannelData2[14] = rcChannels2->chan14b;
+            crsfChannelData2[15] = rcChannels2->chan15b;
 
             
             return RX_FRAME_COMPLETE;
@@ -388,6 +397,20 @@ STATIC_UNIT_TESTED uint16_t crsfReadRawRC(const rxRuntimeConfig_t *rxRuntimeConf
     return (crsfChannelData[chan] * 1024 / 1639) + 881;
 }
 
+STATIC_UNIT_TESTED uint16_t crsfReadRawRC2(const rxRuntimeConfig_t *rxRuntimeConfig2, uint8_t chan)
+{
+    UNUSED(rxRuntimeConfig2);
+    /* conversion from RC value to PWM
+     *       RC     PWM
+     * min  172 ->  988us
+     * mid  992 -> 1500us
+     * max 1811 -> 2012us
+     * scale factor = (2012-988) / (1811-172) = 0.62477120195241
+     * offset = 988 - 172 * 0.62477120195241 = 880.53935326418548
+     */
+    return (crsfChannelData2[chan] * 1024 / 1639) + 881;
+}
+
 
 
 void crsfRxWriteTelemetryData(const void *data, int len)
@@ -449,7 +472,7 @@ bool crsfRxInit2(const rxConfig_t *rxConfig, rxRuntimeConfig_t *rxRuntimeConfig2
     }
 
     rxRuntimeConfig2->channelCount = CRSF_MAX_CHANNEL;
-    rxRuntimeConfig2->rcReadRawFn = crsfReadRawRC;
+    rxRuntimeConfig2->rcReadRawFn = crsfReadRawRC2;
     rxRuntimeConfig2->rcFrameStatusFn = crsfFrameStatus2;
 
     const serialPortConfig_t *portConfig = findSerialPortConfig(FUNCTION_RX_SERIAL);

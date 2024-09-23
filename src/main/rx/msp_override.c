@@ -40,6 +40,7 @@
 
 #include "rx/rx.h"
 #include "rx/crsf.h"
+#include "rx/msp.h"
 #include "rx/msp_override.h"
 
 
@@ -221,11 +222,12 @@ void mspOverrideChannels(rcChannel_t *rcChannels)
             rcChannels[channel].raw = rcChannels[channel].data = mspRcChannels[channel].data;
         }
         if (channel == 1){
-            rcChannels[channel].raw = rcChannels[channel].data = mspRcChannels[channel].data / 2;
+            rcChannels[channel].raw = rcChannels[channel].data = mspRcChannels[channel].data;
         }
 
     }
 }
+
 
 int16_t mspOverrideGetChannelValue(unsigned channelNumber)
 {
