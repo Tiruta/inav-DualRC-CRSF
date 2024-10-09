@@ -99,12 +99,21 @@ static rcChannel_t rcChannels[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 rxLinkStatistics_t rxLinkStatistics;
 rxRuntimeConfig_t rxRuntimeConfig;
 rxRuntimeConfig_t rxRuntimeConfig2;
+static uint16_t roleSwitch = 6;
 static uint8_t rcSampleIndex = 0;
 static int rcOverrideFlag = 0;
 
 int16_t rcDeliver[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 int16_t rcUART2[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 int16_t rcUART7[MAX_SUPPORTED_RC_CHANNEL_COUNT];
+
+int16_t rcUART2_lastTime = 0;
+int16_t rcUART7_lastTime = 0;
+int16_t rcUART2_interval = 0;
+int16_t rcUART7_interval = 0;
+
+bool is_UART2_Valid = true;
+bool is_UART7_Valid = true;
 
 PG_REGISTER_WITH_RESET_TEMPLATE(rxConfig_t, rxConfig, PG_RX_CONFIG, 12);
 
@@ -355,6 +364,9 @@ void rxInit(void)
         rcUART7[channel] = 1500;
         }
 
+    
+    roleSwitch = rxConfig()->mspOverrideChannels;
+
     rxChannelCount = MIN(MAX_SUPPORTED_RC_CHANNEL_COUNT, rxRuntimeConfig.channelCount);
 }
 
@@ -466,15 +478,8 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
     int16_t rcStaging[MAX_SUPPORTED_RC_CHANNEL_COUNT];
 
 
-    //const timeMs_t currentTimeMs = millis();
+    const timeMs_t currentTimeMs = millis();
     
-    //closeSerialPort(6);
-
-//#if defined(USE_RX_MSP) && defined(USE_MSP_RC_OVERRIDE)
-    //if ((rxConfig()->receiverType != RX_TYPE_MSP) && mspOverrideDataProcessingRequired) {
-    //    mspOverrideCalculateChannels(currentTimeUs);
-    //}
-//#endif
 
     if (auxiliaryProcessingRequired) {
         auxiliaryProcessingRequired = !rxRuntimeConfig.rcProcessFrameFn(&rxRuntimeConfig);
@@ -493,6 +498,8 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
     }
 
     rxFlightChannelsValid = true;
+    is_UART7_Valid = true;
+    is_UART2_Valid = true;
 
     // Read and process channel data
     for (int channel = 0; channel < rxChannelCount; channel++) {
@@ -527,66 +534,55 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
     }
 
     //check if rc is from UART2 or UART7
-    //if ch8 < 1100 and ch10 >1900 then this is UART2, Transmitter on UART2 should always be set to have this value on the respective channels
-    if ((rcStaging[7]<1100)){
+    //if ch6 < 1800 then this is UART2, Transmitter on UART2 should always be set to have this value on the respective channels
+    //UART7's ch7 should always be 2000, DO NOT BIND TO ANY SWITCHES/POTS
+    if ((rcStaging[6]<1700)){
         for (int channel = 0; channel < rxChannelCount; channel++) {
             rcUART2[channel] = rcStaging[channel];
+            rcUART2_interval = currentTimeMs - rcUART2_lastTime;
+            rcUART2_lastTime = currentTimeMs; 
             //rcChannels[channel].expiresAt = currentTimeMs + MAX_INVALID_RX_PULSE_TIME;
+            if (rcUART2_interval > 1000){
+                is_UART2_Valid = false;
+            }
         }
-        rcOverrideFlag = rcUART2[6];
-        rcUART2[9] = 1222;
-    }
-
-    if ((rcStaging[7]>1900)){
+        rcOverrideFlag = rcUART2[roleSwitch];
+    } else if ((rcStaging[6]>1700)){
         for (int channel = 0; channel < rxChannelCount; channel++) {
             rcUART7[channel] = rcStaging[channel];
+            rcUART7_interval = currentTimeMs - rcUART7_lastTime;
+            rcUART7_lastTime = currentTimeMs;
+            if (rcUART7_interval > 1000){
+                is_UART7_Valid = false;
+            }
         }
-        rcUART7[9] = 1888;
     }
 
-    if ((rcStaging[7]>1100) && (rcStaging[7]<1900)){
-        rxFlightChannelsValid = false;
-    }
+    //if(is_UART2_Valid && is_UART7_Valid && rxFlightChannelsValid){
+        //if both RX are valid then swith role normally
+        if (rcOverrideFlag < 1300){
+            for (int channel = 0; channel < rxChannelCount; channel++) {
+                rcDeliver[channel] = rcUART2[channel];
+            }
+        } else if (rcOverrideFlag > 1300){
+            for (int channel = 0; channel < rxChannelCount; channel++) {
+                rcDeliver[channel] = rcUART7[channel];
+            }
+        }
+    //} else {
+    //    if (rcOverrideFlag < 1600){
+    //        for (int channel = 0; channel < rxChannelCount; channel++) {
+    //            rcDeliver[channel] = rcUART2[channel];
+    //        }
+    //    }
+    //}
+
+
 
     rcDeliver[6] = rcOverrideFlag;
 
-    if ((rcOverrideFlag < 1600) && rxFlightChannelsValid){
-        for (int channel = 0; channel < rxChannelCount; channel++) {
-            rcDeliver[channel] = rcUART2[channel];
-        }
-    }
 
-    if ((rcOverrideFlag > 1600) && rxFlightChannelsValid){
-        for (int channel = 0; channel < rxChannelCount; channel++) {
-            rcDeliver[channel] = rcUART7[channel];
-        }
-    }
 
-    //if data is invalid then hold previous channel data
-    if (!rxFlightChannelsValid){
-        for (int channel = 0; channel < rxChannelCount; channel++) {
-            rcDeliver[channel] = rcChannels[channel].data;
-        }
-    }
-
-    /*
-    if(rcOverrideFlag > 1600){
-        rcStaging[13] = 1777;
-        //if(rc2stat < 1){
-        rc1Close();
-        crsfRxInit2(rxConfig(), &rxRuntimeConfig2);
-        rc2stat = 1;
-        //}
-    }
-
-    if(rcOverrideFlag < 1601){
-        //rcStaging[13] = 999;
-        //if(rc2stat > 0){
-            //rc2Close();
-        //    rc2stat = 0;
-        //}
-    }
-    */
 
     // Update channel input value if receiver is not in failsafe mode
     // If receiver is in failsafe (not receiving signal or sending invalid channel values) - last good input values are retained

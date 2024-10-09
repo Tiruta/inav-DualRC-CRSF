@@ -3528,7 +3528,7 @@ static void cliGet(char *cmdline)
 
 //Added by Tirta 17/7/2024
 
-static void cliSwitchReceiver(char *cmdline) {
+static void cliSwitchRoleChan(char *cmdline) {
     /*
     if (receiver == 1) {
         // Switch to UART1
@@ -4381,7 +4381,7 @@ const clicmd_t cmdTable[] = {
 #if defined(NAV_NON_VOLATILE_WAYPOINT_STORAGE) && defined(NAV_NON_VOLATILE_WAYPOINT_CLI)
     CLI_COMMAND_DEF("wp", "waypoint list", NULL, cliWaypoints),
 #endif
-CLI_COMMAND_DEF("TN_rx_switch", "Switch RX (CRSF) between UART 2 & 7", "[receiver]", cliSwitchReceiver),
+CLI_COMMAND_DEF("TN_rx_switch", "Switch RX (CRSF) between UART 2 & 7", "[receiver]", cliSwitchRoleChan),
 #ifdef USE_OSD
     CLI_COMMAND_DEF("osd_layout", "get or set the layout of OSD items", "[<layout> [<item> [<col> <row> [<visible>]]]]", cliOsdLayout),
 #endif
