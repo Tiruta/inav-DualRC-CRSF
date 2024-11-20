@@ -546,7 +546,7 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
                 is_UART2_Valid = false;
             }
         }
-        rcOverrideFlag = rcUART2[roleSwitch];
+        rcOverrideFlag = rcUART2[6];
     } else if ((rcStaging[6]>1700)){
         for (int channel = 0; channel < rxChannelCount; channel++) {
             rcUART7[channel] = rcStaging[channel];
@@ -558,8 +558,8 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
         }
     }
 
-    //if(is_UART2_Valid && is_UART7_Valid && rxFlightChannelsValid){
-        //if both RX are valid then swith role normally
+    if(is_UART2_Valid && is_UART7_Valid && rxFlightChannelsValid){
+        //if both RX are valid then switCh role normally
         if (rcOverrideFlag < 1300){
             for (int channel = 0; channel < rxChannelCount; channel++) {
                 rcDeliver[channel] = rcUART2[channel];
@@ -575,8 +575,11 @@ bool calculateRxChannelsAndUpdateFailsafe(timeUs_t currentTimeUs)
     //            rcDeliver[channel] = rcUART2[channel];
     //        }
     //    }
-    //}
-
+    } else {
+        for (int channel = 0; channel < rxChannelCount; channel++) {
+            rcDeliver[channel] = rcUART2[channel];
+        }
+    }
 
 
     rcDeliver[6] = rcOverrideFlag;
